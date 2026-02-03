@@ -38,7 +38,7 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'django.contrib.gis',  # PostGIS
+    # 'django.contrib.gis',  # PostGIS - Descomentar cuando instales GDAL
     'cloudinary',
     'cloudinary_storage'
 ]
@@ -95,7 +95,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        # 'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        # 'ENGINE': 'django.contrib.gis.db.backends.postgis',  # Descomentar cuando uses PostGIS
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': config('DB_NAME', default='medicos_db'),
         'USER': config('DB_USER', default='postgres'),
