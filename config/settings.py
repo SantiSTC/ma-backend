@@ -230,3 +230,24 @@ CLOUDINARY_STORAGE = {
 
 # Media Files - Usar Cloudinary
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'apikey'  # Siempre es 'apikey'
+EMAIL_HOST_PASSWORD = config('SENDGRID_API_KEY')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@appmedicos.com')
+
+# Configuración de verificación
+VERIFICATION_CODE_EXPIRY_MINUTES = 15  # Código válido por 15 minutos
+VERIFICATION_CODE_LENGTH = 6
+
+# Google OAuth
+GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+
+# En desarrollo: imprimir emails en consola (opcional)
+if DEBUG:
+    # Para testing, descomentar esto:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    # pass

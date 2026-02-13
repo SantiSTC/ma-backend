@@ -56,7 +56,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
     """
     Serializer para CREAR usuarios (uso interno).
     
-    Este serializer se usa dentro de RegisterSerializer.
+    Este serializer se usa dentro de RegisterVerifiedSerializer.
     Maneja la creación del password de forma segura.
     """
     

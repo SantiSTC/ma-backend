@@ -8,6 +8,7 @@
 5. [Endpoints de la API](#endpoints-de-la-api)
 6. [Autenticación](#autenticación)
 7. [Configuración y Ejecución](#configuración-y-ejecución)
+8. [Tests](#tests)
 
 ---
 
@@ -16,7 +17,9 @@
 Backend para la aplicación "Médicos Argentina", una plataforma que conecta pacientes con médicos para la gestión de turnos médicos.
 
 ### Funcionalidades implementadas:
-- ✅ Registro y autenticación de usuarios (JWT)
+- ✅ Registro con verificacion por email (codigo)
+- ✅ Login con JWT
+- ✅ Google OAuth
 - ✅ Perfiles separados para médicos y pacientes
 - ✅ Gestión de especialidades médicas
 - ✅ Listado público de médicos con filtros
@@ -54,11 +57,12 @@ ma-backend/
 │       │   ├── user.py     # Usuario base
 │       │   ├── doctor.py   # Perfil de médico
 │       │   ├── patient.py  # Perfil de paciente
-│       │   └── specialty.py # Especialidades
+│       │   ├── specialty.py # Especialidades
+│       │   └── verification.py # Códigos de verificación
 │       │
 │       ├── serializers/    # Serializadores
 │       │   ├── user.py
-│       │   ├── auth.py
+│       │   ├── auth.py     # Register, Login, Google, Verify
 │       │   ├── doctor.py
 │       │   ├── patient.py
 │       │   └── specialty.py
@@ -75,9 +79,15 @@ ma-backend/
 │       │   ├── patients.py
 │       │   └── specialties.py
 │       │
+│       ├── tests/          # Tests unitarios
+│       │   └── test_auth.py
+│       │
+│       ├── services.py     # Servicios (envío de emails)
 │       └── admin.py        # Panel de administración
 │
 ├── docs/                   # Documentación
+│   ├── API_DOCUMENTATION.md
+│   └── AUTH_FLOW.md
 ├── requirements.txt        # Dependencias
 └── manage.py
 ```
@@ -135,6 +145,17 @@ ma-backend/
 | description | text | Descripción |
 | doctors | M2M → Doctor | Médicos con esta especialidad |
 
+### EmailVerification (Códigos de verificación)
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | int | ID auto-incremental |
+| user | FK → User | Usuario asociado |
+| code | char(6) | Código de 6 dígitos |
+| created_at | datetime | Fecha de creación |
+| expires_at | datetime | Expiración (15 min default) |
+| is_used | boolean | Si ya fue usado |
+| ip_address | IP | IP del solicitante |
+
 ---
 
 ## 🌐 Endpoints de la API
@@ -143,8 +164,11 @@ ma-backend/
 
 | Método | Endpoint | Descripción | Auth |
 |--------|----------|-------------|------|
-| POST | `/register/` | Crear cuenta | ❌ |
-| POST | `/login/` | Iniciar sesión | ❌ |
+| POST | `/register/` | Crear cuenta (inactiva, envia codigo) | ❌ |
+| POST | `/verify-email/` | Verificar codigo y activar cuenta | ❌ |
+| POST | `/resend-verification/` | Reenviar codigo de verificacion | ❌ |
+| POST | `/google/` | Login/registro con Google | ❌ |
+| POST | `/login/` | Iniciar sesion | ❌ |
 | POST | `/logout/` | Cerrar sesión | ✅ |
 | GET | `/profile/` | Ver mi perfil | ✅ |
 | PUT | `/profile/` | Editar mi perfil | ✅ |
@@ -186,7 +210,7 @@ ma-backend/
 Se utiliza **JWT (JSON Web Tokens)** con la librería `djangorestframework-simplejwt`.
 
 ### Tokens:
-- **Access Token**: Expira en 60 minutos, se usa en cada petición
+- **Access Token**: Expira en 15 minutos, se usa en cada peticion
 - **Refresh Token**: Expira en 7 días, se usa para obtener nuevo access token
 
 ### Uso en peticiones:
@@ -197,15 +221,18 @@ Headers:
 
 ### Flujo de autenticación:
 ```
-1. POST /api/auth/register/ o /api/auth/login/
-   → Recibe: { access: "...", refresh: "..." }
+Registro email/password
+1. POST /api/auth/register/ → crea usuario inactivo y envia codigo
+2. POST /api/auth/verify-email/ → activa cuenta y retorna tokens
 
-2. Usar access token en peticiones autenticadas
-   → Headers: { Authorization: "Bearer <access>" }
+Login email/password
+1. POST /api/auth/login/ → retorna tokens (solo si is_active=True)
 
-3. Cuando access expira → POST /api/auth/token/refresh/
-   → Body: { refresh: "<refresh_token>" }
-   → Recibe nuevo access token
+Google OAuth
+1. POST /api/auth/google/ → valida token Google y retorna tokens
+
+Refresh
+1. POST /api/auth/token/refresh/ → recibe { refresh } y retorna access
 ```
 
 ---
@@ -226,6 +253,10 @@ DB_PORT=5432
 CLOUDINARY_CLOUD_NAME=xxx
 CLOUDINARY_API_KEY=xxx
 CLOUDINARY_API_SECRET=xxx
+
+SENDGRID_API_KEY=xxx
+DEFAULT_FROM_EMAIL=noreply@appmedicos.com
+GOOGLE_CLIENT_ID=xxx
 ```
 
 ### Comandos básicos
@@ -267,14 +298,38 @@ python manage.py check
 
 ## 🚧 Pendiente de Implementar
 
-- [ ] Verificación de email
 - [ ] Recuperación de contraseña
-- [ ] Login con Google (OAuth)
 - [ ] Sistema de suscripción para médicos
 - [ ] Validación de matrícula médica
 - [ ] Módulo de turnos/citas
 - [ ] Notificaciones
-- [ ] Tests unitarios
+- [ ] Tests unitarios adicionales
+
+---
+
+## 🧪 Tests
+
+### Ejecutar tests de autenticación
+```bash
+python manage.py test apps.users.tests.test_auth -v 2
+```
+
+### Cobertura de tests actual
+| Módulo | Tests | Cobertura |
+|--------|-------|-----------|
+| Registro | 3 | Usuario inactivo, email duplicado, passwords |
+| Verificación | 3 | Código válido/inválido, ya activo |
+| Reenvío | 2 | Nuevo código, usuario activo |
+| Login | 4 | Exitoso, inactivo, password, email |
+| Google OAuth | 4 | Nuevo usuario, existente, token inválido, email no verificado |
+
+**Total: 16 tests**
+
+---
+
+## 📖 Documentación Adicional
+
+- [AUTH_FLOW.md](AUTH_FLOW.md) - Flujo detallado del sistema de autenticación
 
 ---
 

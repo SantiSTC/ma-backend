@@ -39,6 +39,15 @@ cp .env.example .env
 # Editar .env con tus valores
 ```
 
+Variables principales:
+
+- `SECRET_KEY`
+- `DEBUG`
+- `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`
+- `SENDGRID_API_KEY`, `DEFAULT_FROM_EMAIL`
+- `GOOGLE_CLIENT_ID` (OAuth)
+- `JWT_SECRET_KEY` (opcional, si no usa `SECRET_KEY`)
+
 ### 5. Levantar base de datos con Docker
 
 ```bash
@@ -76,6 +85,20 @@ backend/
 ├── manage.py
 └── docker-compose.yml
 ```
+
+## Autenticacion (resumen)
+
+- Registro con email/password requiere verificacion por codigo.
+- Google OAuth autentica y activa al usuario automaticamente.
+
+Endpoints:
+
+- `POST /api/auth/register/`
+- `POST /api/auth/verify-email/`
+- `POST /api/auth/resend-verification/`
+- `POST /api/auth/google/`
+- `POST /api/auth/login/`
+- `POST /api/auth/token/refresh/`
 
 
 

@@ -4,6 +4,7 @@ from .user import User, UserManager
 from .doctor import Doctor
 from .patient import Patient
 from .specialty import Specialty
+from .verification import EmailVerification
 
 __all__ = [
     'User',
@@ -11,4 +12,5 @@ __all__ = [
     'Doctor',
     'Patient',
     'Specialty',
+    'EmailVerification'
 ]

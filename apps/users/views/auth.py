@@ -1,6 +1,6 @@
 # apps/users/views/auth.py
 """
-Views de autenticación: Register, Login, Logout, Profile.
+Views de autenticacion: registro con verificacion, login, Google OAuth y perfil.
 """
 
 from rest_framework import status
@@ -10,7 +10,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.serializers import (
-    RegisterSerializer,
+    RegisterVerifiedSerializer,
+    VerifyEmailSerializer,
+    ResendVerificationSerializer,
+    GoogleAuthSerializer,
     LoginSerializer,
     UserSerializer,
 )
@@ -20,42 +23,83 @@ from apps.users.serializers import (
 @permission_classes([AllowAny])
 def register(request):
     """
-    Crea una nueva cuenta de usuario.
-    
+    Crea una nueva cuenta de usuario INACTIVA y envia codigo de verificacion.
+
     POST /api/auth/register/
-    
-    Body:
-    {
-        "email": "usuario@mail.com",
-        "username": "usuario123",
-        "password": "contraseña123",
-        "password_confirm": "contraseña123",
-        "first_name": "Juan",
-        "last_name": "Pérez",
-        "phone": "+5491123456789",  (opcional)
-        "account_type": "doctor" o "patient"
-    }
-    
-    Response (201):
-    {
-        "message": "Cuenta creada exitosamente",
-        "user": { ... },
-        "account_type": "doctor",
-        "tokens": { "access": "...", "refresh": "..." }
-    }
     """
-    serializer = RegisterSerializer(data=request.data)
-    
+    serializer = RegisterVerifiedSerializer(data=request.data, context={'request': request})
+
     if serializer.is_valid():
         result = serializer.save()
-        
         return Response({
-            'message': 'Cuenta creada exitosamente',
+            'message': 'Revisa tu email para verificar tu cuenta',
             'user': UserSerializer(result['user']).data,
             'account_type': result['account_type'],
-            'tokens': result['tokens'],
         }, status=status.HTTP_201_CREATED)
-    
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_email(request):
+    """
+    Verifica el codigo de email y activa la cuenta.
+
+    POST /api/auth/verify-email/
+    """
+    serializer = VerifyEmailSerializer(data=request.data)
+
+    if serializer.is_valid():
+        result = serializer.save()
+        return Response({
+            'message': 'Email verificado correctamente',
+            'user': UserSerializer(result['user']).data,
+            'tokens': result['tokens'],
+        }, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def resend_verification(request):
+    """
+    Reenvia el codigo de verificacion.
+
+    POST /api/auth/resend-verification/
+    """
+    serializer = ResendVerificationSerializer(data=request.data, context={'request': request})
+
+    if serializer.is_valid():
+        serializer.save()
+        return Response({
+            'message': 'Codigo reenviado correctamente',
+        }, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def google_auth(request):
+    """
+    Login/registro con Google OAuth.
+
+    POST /api/auth/google/
+    """
+    serializer = GoogleAuthSerializer(data=request.data, context={'request': request})
+
+    if serializer.is_valid():
+        result = serializer.save()
+        return Response({
+            'message': 'Autenticacion con Google exitosa',
+            'user': UserSerializer(result['user']).data,
+            'tokens': result['tokens'],
+            'is_new_user': result['is_new_user'],
+            'account_type': result['account_type'],
+        }, status=status.HTTP_200_OK)
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
