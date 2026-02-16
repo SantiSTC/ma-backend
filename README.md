@@ -98,7 +98,29 @@ Endpoints:
 - `POST /api/auth/resend-verification/`
 - `POST /api/auth/google/`
 - `POST /api/auth/login/`
+- `POST /api/auth/logout/`
+- `GET/PUT /api/auth/profile/`
 - `POST /api/auth/token/refresh/`
+
+## Seguridad
+
+El backend implementa múltiples capas de seguridad:
+
+- **Rate Limiting**: Protección contra fuerza bruta
+  - Usuarios anónimos: 20 requests/minuto
+  - Usuarios autenticados: 60 requests/minuto
+  - Login: 5 intentos/minuto
+  - Verificación de código: 3 intentos/minuto
+- **Bloqueo temporal**: 5 intentos fallidos de verificación = bloqueo 15 min
+- **Mensajes genéricos**: Login no revela si el email existe
+- **JWT con blacklist**: Tokens invalidados al hacer logout
+- **Passwords hasheados**: PBKDF2 (Django default)
+
+## Documentación
+
+Ver documentación completa en:
+- [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)
+- [docs/AUTH_FLOW.md](docs/AUTH_FLOW.md)
 
 
 

@@ -432,18 +432,21 @@ Postcondición: Usuario activo
 
 | Error | Código | Mensaje |
 |-------|--------|---------|
-| Email no existe | 400 | `{"email": "No existe una cuenta con este email."}` |
+| Código inválido | 400 | `{"code": "Código inválido. Intentos restantes: N"}` |
+| Código expirado | 400 | `{"code": "Código expirado. Intentos restantes: N"}` |
 | Ya verificado | 400 | `{"email": "Esta cuenta ya esta verificada."}` |
-| Código inválido | 400 | `{"code": "Código inválido"}` |
-| Código expirado | 400 | `{"code": "Código expirado"}` |
+| Bloqueado | 400 | `{"code": "Demasiados intentos fallidos. Intenta en 15 minutos."}` |
+| Rate limit excedido | 429 | `{"detail": "Request was throttled."}` |
 
 ### Login
 
 | Error | Código | Mensaje |
 |-------|--------|---------|
-| Email no existe | 400 | `{"email": "No existe una cuenta con este email."}` |
-| Usuario inactivo | 400 | `{"email": "Debes verificar tu email antes de iniciar sesion."}` |
-| Password incorrecta | 400 | `{"password": "Contrasena incorrecta."}` |
+| Credenciales inválidas | 400 | `{"non_field_errors": ["Credenciales inválidas."]}` |
+| Usuario inactivo | 400 | `{"non_field_errors": ["Debes verificar tu email antes de iniciar sesión."]}` |
+| Rate limit excedido | 429 | `{"detail": "Request was throttled."}` |
+
+> ⚠️ **Nota de seguridad**: El mensaje "Credenciales inválidas" es genérico intencionalmente para no revelar si el email existe en el sistema.
 
 ### Google OAuth
 
@@ -516,6 +519,20 @@ VERIFICATION_CODE_EXPIRY_MINUTES=15  # En settings.py
 ```python
 # config/settings.py
 
+REST_FRAMEWORK = {
+    # ... otras configuraciones ...
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '20/minute',
+        'user': '60/minute',
+        'login': '5/minute',
+        'verification': '3/minute',
+    },
+}
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -525,6 +542,7 @@ SIMPLE_JWT = {
 
 VERIFICATION_CODE_EXPIRY_MINUTES = 15
 GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+```
 ```
 
 ---

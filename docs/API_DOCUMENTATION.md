@@ -83,6 +83,7 @@ ma-backend/
 │       │   └── test_auth.py
 │       │
 │       ├── services.py     # Servicios (envío de emails)
+│       ├── throttles.py    # Rate limiting y protección fuerza bruta
 │       └── admin.py        # Panel de administración
 │
 ├── docs/                   # Documentación
@@ -234,6 +235,41 @@ Google OAuth
 Refresh
 1. POST /api/auth/token/refresh/ → recibe { refresh } y retorna access
 ```
+
+---
+
+## 🛡️ Seguridad
+
+### Rate Limiting (Throttling)
+
+Protección contra ataques de fuerza bruta implementada en `apps/users/throttles.py`.
+
+| Tipo | Límite | Descripción |
+|------|--------|-------------|
+| Usuarios anónimos | 20/minuto | Todas las peticiones sin auth |
+| Usuarios autenticados | 60/minuto | Peticiones con JWT válido |
+| Login | 5/minuto | Endpoint `/api/auth/login/` |
+| Verificación | 3/minuto | Endpoint `/api/auth/verify-email/` |
+
+### Bloqueo por Intentos Fallidos
+
+| Evento | Acción |
+|--------|--------|
+| 5 intentos fallidos de verificación | Bloqueo 15 minutos por email |
+| Código verificado correctamente | Se limpian los intentos |
+
+### Mensajes de Error Seguros
+
+- **Login**: Mensaje genérico "Credenciales inválidas" (no revela si el email existe)
+- **Verificación**: Muestra intentos restantes antes de bloqueo
+
+### Otras Medidas
+
+- Passwords hasheados con PBKDF2
+- JWT con blacklist al hacer logout
+- Códigos de verificación expiran en 15 min
+- Google OAuth valida `aud` (client ID)
+- UUIDs como IDs (previene enumeración)
 
 ---
 
