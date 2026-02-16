@@ -40,6 +40,7 @@ class UserSerializer(serializers.ModelSerializer):
             'is_active',
             'is_doctor',      # Propiedad: tiene perfil de doctor?
             'is_patient',     # Propiedad: tiene perfil de paciente?
+            'account_type',   # Tipo de cuenta pendiente de onboarding
             'created_at',
             'updated_at',
         ]
@@ -47,6 +48,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id',
             'email',          # No se puede cambiar el email después de crear
             'is_active',
+            'account_type',   # Solo se setea en registro
             'created_at',
             'updated_at',
         ]

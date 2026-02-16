@@ -79,8 +79,9 @@ class RegisterVerifiedSerializer(serializers.Serializer):
         validated_data.pop('password_confirm')
         account_type = validated_data.pop('account_type')
         
-        # Crear usuario inactivo directamente
+        # Crear usuario inactivo con account_type guardado
         validated_data['is_active'] = False
+        validated_data['account_type'] = account_type
         user = User.objects.create_user(**validated_data)
 
         # Enviar codigo de verificacion

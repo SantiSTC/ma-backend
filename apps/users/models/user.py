@@ -75,6 +75,20 @@ class User(AbstractUser):
         }
     )
     
+    # Tipo de cuenta (para onboarding)
+    ACCOUNT_TYPE_CHOICES = [
+        ('doctor', 'Doctor'),
+        ('patient', 'Paciente'),
+    ]
+    account_type = models.CharField(
+        _('tipo de cuenta'),
+        max_length=10,
+        choices=ACCOUNT_TYPE_CHOICES,
+        null=True,
+        blank=True,
+        help_text=_('Tipo de cuenta seleccionado en registro. Se limpia al crear perfil.')
+    )
+    
     # Soft delete
     deleted_at = models.DateTimeField(
         _('fecha de eliminación'),

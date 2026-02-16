@@ -245,9 +245,10 @@ VERIFICATION_CODE_LENGTH = 6
 
 # Google OAuth
 GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', default='')
 
 # En desarrollo: imprimir emails en consola (opcional)
 if DEBUG:
-    # Para testing, descomentar esto:
+#     # Para testing, descomentar esto:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-    # pass
+#     # pass
