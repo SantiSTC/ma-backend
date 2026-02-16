@@ -12,6 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.models import EmailVerification
 from apps.users.services import send_verification_code, send_welcome_email
+from apps.users.throttles import VerificationAttemptTracker
 
 
 User = get_user_model()
@@ -107,11 +108,18 @@ class VerifyEmailSerializer(serializers.Serializer):
         email = _normalize_email(data.get('email', ''))
         code = data.get('code', '')
 
+        # Verificar bloqueo por intentos fallidos
+        if VerificationAttemptTracker.is_blocked(email):
+            raise serializers.ValidationError({
+                'code': 'Demasiados intentos fallidos. Intenta en 15 minutos.'
+            })
+
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
+            VerificationAttemptTracker.record_failed_attempt(email)
             raise serializers.ValidationError({
-                'email': 'No existe una cuenta con este email.'
+                'code': 'Código inválido.'
             })
 
         if user.is_active:
@@ -121,8 +129,13 @@ class VerifyEmailSerializer(serializers.Serializer):
 
         ok, message = EmailVerification.verify_code(user, code)
         if not ok:
-            raise serializers.ValidationError({'code': message})
+            remaining = VerificationAttemptTracker.record_failed_attempt(email)
+            raise serializers.ValidationError({
+                'code': f'{message}. Intentos restantes: {VerificationAttemptTracker.get_remaining_attempts(email)}'
+            })
 
+        # Limpiar intentos después de éxito
+        VerificationAttemptTracker.clear_attempts(email)
         data['user'] = user
         return data
 
@@ -268,22 +281,21 @@ class LoginSerializer(serializers.Serializer):
         email = _normalize_email(data.get('email', ''))
         password = data.get('password', '')
 
+        # Mensaje genérico para no revelar si el email existe
+        generic_error = 'Credenciales inválidas.'
+
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            raise serializers.ValidationError({
-                'email': 'No existe una cuenta con este email.'
-            })
+            raise serializers.ValidationError({'non_field_errors': [generic_error]})
 
         if not user.is_active:
             raise serializers.ValidationError({
-                'email': 'Debes verificar tu email antes de iniciar sesion.'
+                'non_field_errors': ['Debes verificar tu email antes de iniciar sesión.']
             })
 
         if not user.check_password(password):
-            raise serializers.ValidationError({
-                'password': 'Contrasena incorrecta.'
-            })
+            raise serializers.ValidationError({'non_field_errors': [generic_error]})
 
         refresh = RefreshToken.for_user(user)
         return {

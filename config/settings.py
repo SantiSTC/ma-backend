@@ -170,6 +170,17 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ),
+    # Rate Limiting - Protección contra fuerza bruta
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '20/minute',      # Usuarios no autenticados
+        'user': '60/minute',      # Usuarios autenticados
+        'login': '5/minute',      # Login específico
+        'verification': '3/minute', # Verificación de código
+    },
 }
 
 # JWT Settings

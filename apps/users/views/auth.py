@@ -4,7 +4,7 @@ Views de autenticacion: registro con verificacion, login, Google OAuth y perfil.
 """
 
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -17,6 +17,7 @@ from apps.users.serializers import (
     LoginSerializer,
     UserSerializer,
 )
+from apps.users.throttles import LoginRateThrottle, VerificationRateThrottle
 
 
 @api_view(['POST'])
@@ -42,6 +43,7 @@ def register(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([VerificationRateThrottle])
 def verify_email(request):
     """
     Verifica el codigo de email y activa la cuenta.
@@ -105,6 +107,7 @@ def google_auth(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([LoginRateThrottle])
 def login(request):
     """
     Inicia sesión y devuelve tokens JWT.
